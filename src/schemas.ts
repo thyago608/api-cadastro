@@ -36,5 +36,25 @@ export const uploadItemSchema = z.object({
 
 export const uploadSchema = z.object({ data: z.array(uploadItemSchema).min(1) }).strict();
 
+export const despesasSchema = z.object({
+  SinEvt_Codigo: z.coerce.number().int().positive(),
+  SinProc_Data_Aviso: date,
+  CobTp_Codigo: z.coerce.number().int().positive(),
+  SinNat_codigo: z.coerce.number().int().positive(),
+  SinAtiv_codigo: z.coerce.number().int().positive(),
+  SinEvt_Local_Ocorrencia: z.coerce.number().int().positive(),
+  Beneficiarios: z.array(z.object({
+    SinBen_codigo: z.coerce.number().int().positive(),
+    SinBen_Percentual: z.coerce.number().min(0).max(100),
+    TpVinc_Codigo: z.coerce.number().int().positive()
+  })).min(1),
+  Despesas: z.array(z.object({
+    SinBen_Codigo: z.coerce.number().int().positive(),
+    Ind_Texto: z.string().trim().min(1),
+    Ind_Valor: z.coerce.number().nonnegative()
+  })).min(1)
+}).strict();
+
 export type PreCadastro = z.infer<typeof preCadastroSchema>;
 export type UploadPayload = z.infer<typeof uploadSchema>;
+export type DespesasPayload = z.infer<typeof despesasSchema>;

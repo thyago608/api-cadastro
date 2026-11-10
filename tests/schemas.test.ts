@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { preCadastroSchema, uploadSchema } from '../src/schemas.js';
+import { despesasSchema, preCadastroSchema, uploadSchema } from '../src/schemas.js';
 
 const preCadastro = {
   Ctr_Codigo: 343555, DocumentoSegurado: '049.910.136-74', NomeSegurado: 'EMELLY CRISTINY SOARES NARCISO',
@@ -19,5 +19,14 @@ describe('contratos de integração', () => {
   });
   it('aceita o payload de documentos documentado', () => {
     expect(uploadSchema.parse({ data: [{ url: 'https://exemplo.com/documento.pdf', nomeArquivo: 'documento.pdf', descricao: 'documento', codigoEvento: 44509 }] }).data).toHaveLength(1);
+  });
+  it('aceita o payload documentado para cadastro de despesas', () => {
+    const payload = despesasSchema.parse({
+      SinEvt_Codigo: 44509, SinProc_Data_Aviso: '2026-11-09', CobTp_Codigo: 25,
+      SinNat_codigo: 16, SinAtiv_codigo: 11, SinEvt_Local_Ocorrencia: 1,
+      Beneficiarios: [{ SinBen_codigo: 34667, SinBen_Percentual: 100, TpVinc_Codigo: 9 }],
+      Despesas: [{ SinBen_Codigo: 34667, Ind_Texto: '00.01.001-4', Ind_Valor: 100 }]
+    });
+    expect(payload.SinEvt_Codigo).toBe(44509);
   });
 });

@@ -3,7 +3,7 @@ import multer from 'multer';
 import { ZodError } from 'zod';
 import type { PoolClient } from 'pg';
 import { withTransaction, type Database } from './db/client.js';
-import { preCadastroSchema, uploadSchema, type PreCadastro, type UploadPayload } from './schemas.js';
+import { despesasSchema, preCadastroSchema, uploadSchema, type DespesasPayload, type PreCadastro, type UploadPayload } from './schemas.js';
 
 type AppOptions = { db: Database };
 const multipart = multer().none();
@@ -54,6 +54,32 @@ async function createDocuments(client: PoolClient, body: UploadPayload) {
   return responses;
 }
 
+async function createDespesas(client: PoolClient, body: DespesasPayload) {
+  const insert = await client.query<{ id: string; sin_proc_codigo: string }>(
+    `INSERT INTO cadastros_despesas (
+      sin_evt_codigo, sin_proc_data_aviso, cob_tp_codigo, sin_nat_codigo, sin_ativ_codigo, sin_evt_local_ocorrencia
+    ) VALUES ($1,$2,$3,$4,$5,$6)
+    RETURNING id, sin_proc_codigo`,
+    [body.SinEvt_Codigo, body.SinProc_Data_Aviso, body.CobTp_Codigo, body.SinNat_codigo, body.SinAtiv_codigo, body.SinEvt_Local_Ocorrencia]
+  );
+  const { id, sin_proc_codigo } = insert.rows[0];
+  const numero = processNumber(sin_proc_codigo);
+  await client.query('UPDATE cadastros_despesas SET sin_proc_numero_sinistro = $1 WHERE id = $2', [numero, id]);
+  for (const item of body.Beneficiarios) {
+    await client.query(
+      'INSERT INTO cadastro_despesa_beneficiarios (cadastro_despesa_id, sin_ben_codigo, sin_ben_percentual, tp_vinc_codigo) VALUES ($1,$2,$3,$4)',
+      [id, item.SinBen_codigo, item.SinBen_Percentual, item.TpVinc_Codigo]
+    );
+  }
+  for (const item of body.Despesas) {
+    await client.query(
+      'INSERT INTO cadastro_despesa_itens (cadastro_despesa_id, sin_ben_codigo, ind_texto, ind_valor) VALUES ($1,$2,$3,$4)',
+      [id, item.SinBen_Codigo, item.Ind_Texto, item.Ind_Valor]
+    );
+  }
+  return { SinEvt_Codigo: body.SinEvt_Codigo, SinProc_codigo: Number(sin_proc_codigo), SinProc_Numero_Sinistro: numero };
+}
+
 export function createApp({ db }: AppOptions) {
   const app = express();
   app.disable('x-powered-by');
@@ -68,6 +94,10 @@ export function createApp({ db }: AppOptions) {
       const raw = typeof req.body.data === 'string' ? { data: JSON.parse(req.body.data) } : req.body;
       res.status(201).json(await withTransaction(db, c => createDocuments(c, uploadSchema.parse(raw))));
     } catch (error) { next(error); }
+  });
+  app.post('/integracaoBrick/despesas', async (req, res, next) => {
+    try { res.status(201).json([await withTransaction(db, c => createDespesas(c, despesasSchema.parse(req.body)))]); }
+    catch (error) { next(error); }
   });
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof ZodError) return res.status(400).json({ error: 'Dados inválidos.', details: error.flatten() });
