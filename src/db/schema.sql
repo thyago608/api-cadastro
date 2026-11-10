@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS pre_cadastros (
 
 CREATE TABLE IF NOT EXISTS beneficiarios (
   id BIGSERIAL PRIMARY KEY,
-  sin_evt_codigo BIGINT NOT NULL REFERENCES pre_cadastros(sin_evt_codigo) ON DELETE CASCADE,
+  sin_evt_codigo BIGINT NOT NULL,
   sin_ben_codigo BIGINT NOT NULL,
   sin_ben_percentual NUMERIC(7,2) NOT NULL CHECK (sin_ben_percentual >= 0 AND sin_ben_percentual <= 100),
   tp_vinc_codigo INTEGER NOT NULL
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS beneficiarios (
 
 CREATE TABLE IF NOT EXISTS despesas (
   id BIGSERIAL PRIMARY KEY,
-  sin_evt_codigo BIGINT NOT NULL REFERENCES pre_cadastros(sin_evt_codigo) ON DELETE CASCADE,
+  sin_evt_codigo BIGINT NOT NULL,
   sin_ben_codigo BIGINT NOT NULL,
   ind_texto TEXT NOT NULL,
   ind_valor NUMERIC(14,2) NOT NULL CHECK (ind_valor >= 0)
@@ -41,3 +41,7 @@ CREATE TABLE IF NOT EXISTS documentos (
   descricao TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- A rota de despesas é uma simulação de integração e aceita códigos externos.
+ALTER TABLE beneficiarios DROP CONSTRAINT IF EXISTS beneficiarios_sin_evt_codigo_fkey;
+ALTER TABLE despesas DROP CONSTRAINT IF EXISTS despesas_sin_evt_codigo_fkey;

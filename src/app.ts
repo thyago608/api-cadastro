@@ -55,36 +55,24 @@ async function createDocuments(client: PoolClient, body: UploadPayload) {
 }
 
 async function createDespesas(client: PoolClient, body: DespesasPayload) {
-  const event = await client.query<{ sin_evt_codigo: string; sin_proc_codigo: string; sin_proc_numero_sinistro: string }>(
-    `UPDATE pre_cadastros
-     SET sin_proc_data_aviso = $1, cob_tp_codigo = $2, sin_nat_codigo = $3,
-         sin_ativ_codigo = $4, sin_evt_local_ocorrencia = $5
-     WHERE sin_evt_codigo = $6
-     RETURNING sin_evt_codigo, sin_proc_codigo, sin_proc_numero_sinistro`,
-    [body.SinProc_Data_Aviso, body.CobTp_Codigo, body.SinNat_codigo, body.SinAtiv_codigo, body.SinEvt_Local_Ocorrencia, body.SinEvt_Codigo]
-  );
-  if (!event.rowCount) {
-    const error = new Error(`Evento ${body.SinEvt_Codigo} não encontrado. Crie o pré-cadastro antes de cadastrar despesas.`) as Error & { status: number };
-    error.status = 404;
-    throw error;
-  }
   for (const item of body.Beneficiarios) {
     await client.query(
       'INSERT INTO beneficiarios (sin_evt_codigo, sin_ben_codigo, sin_ben_percentual, tp_vinc_codigo) VALUES ($1,$2,$3,$4)',
       [body.SinEvt_Codigo, item.SinBen_codigo, item.SinBen_Percentual, item.TpVinc_Codigo]
     );
   }
+  let processCode: string | undefined;
   for (const item of body.Despesas) {
-    await client.query(
-      'INSERT INTO despesas (sin_evt_codigo, sin_ben_codigo, ind_texto, ind_valor) VALUES ($1,$2,$3,$4)',
+    const insert = await client.query<{ id: string }>(
+      'INSERT INTO despesas (sin_evt_codigo, sin_ben_codigo, ind_texto, ind_valor) VALUES ($1,$2,$3,$4) RETURNING id',
       [body.SinEvt_Codigo, item.SinBen_Codigo, item.Ind_Texto, item.Ind_Valor]
     );
+    processCode ??= insert.rows[0].id;
   }
-  const result = event.rows[0];
   return {
-    SinEvt_Codigo: Number(result.sin_evt_codigo),
-    SinProc_codigo: Number(result.sin_proc_codigo),
-    SinProc_Numero_Sinistro: result.sin_proc_numero_sinistro
+    SinEvt_Codigo: body.SinEvt_Codigo,
+    SinProc_codigo: Number(processCode),
+    SinProc_Numero_Sinistro: processNumber(processCode!)
   };
 }
 
