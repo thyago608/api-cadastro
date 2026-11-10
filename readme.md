@@ -10,7 +10,7 @@ Os endpoints são públicos e não exigem autenticação.
 
 - `POST /integracaoBrick/preCadastro`: recebe o JSON exibido na documentação. Retorna uma lista com `SinEvt_Codigo`, `SinProc_codigo` e `SinProc_Numero_Sinistro`.
 - `POST /integracaoBrick/upload`: aceita JSON (`{ "data": [...] }`) ou `multipart/form-data`, em que o campo `data` contém esse array em JSON. Cada item tem `url`, `nomeArquivo`, `descricao`, `codigoEvento`. Retorna a lista de status no mesmo formato do anexo.
-- `POST /integracaoBrick/despesas`: recebe evento, dados do processo, beneficiários e despesas; retorna o código do evento e do processo gerado.
+- `POST /integracaoBrick/despesas`: acrescenta beneficiários e despesas a um pré-cadastro existente, atualiza os dados recebidos do processo e retorna os códigos já vinculados ao evento.
 - `GET /health`: verificação de saúde.
 
 O endpoint de upload registra a URL fornecida; ele não baixa nem armazena o binário do arquivo. Isso corresponde aos campos da documentação recebida.

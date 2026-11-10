@@ -48,18 +48,19 @@ paths:
         '404': { description: Evento não encontrado }
   /integracaoBrick/despesas:
     post:
-      summary: Cadastra despesas vinculadas a um evento
+      summary: Cadastra despesas vinculadas a um pré-cadastro existente
       requestBody:
         required: true
         content:
           application/json: { schema: { $ref: '#/components/schemas/Despesas' } }
       responses:
         '201':
-          description: Despesas cadastradas
+          description: Despesas cadastradas no pré-cadastro
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PreCadastroResposta' } }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { description: Pré-cadastro não encontrado para o evento informado }
 components:
   responses:
     BadRequest: { description: Payload inválido }

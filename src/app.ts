@@ -55,29 +55,37 @@ async function createDocuments(client: PoolClient, body: UploadPayload) {
 }
 
 async function createDespesas(client: PoolClient, body: DespesasPayload) {
-  const insert = await client.query<{ id: string; sin_proc_codigo: string }>(
-    `INSERT INTO cadastros_despesas (
-      sin_evt_codigo, sin_proc_data_aviso, cob_tp_codigo, sin_nat_codigo, sin_ativ_codigo, sin_evt_local_ocorrencia
-    ) VALUES ($1,$2,$3,$4,$5,$6)
-    RETURNING id, sin_proc_codigo`,
-    [body.SinEvt_Codigo, body.SinProc_Data_Aviso, body.CobTp_Codigo, body.SinNat_codigo, body.SinAtiv_codigo, body.SinEvt_Local_Ocorrencia]
+  const event = await client.query<{ sin_evt_codigo: string; sin_proc_codigo: string; sin_proc_numero_sinistro: string }>(
+    `UPDATE pre_cadastros
+     SET sin_proc_data_aviso = $1, cob_tp_codigo = $2, sin_nat_codigo = $3,
+         sin_ativ_codigo = $4, sin_evt_local_ocorrencia = $5
+     WHERE sin_evt_codigo = $6
+     RETURNING sin_evt_codigo, sin_proc_codigo, sin_proc_numero_sinistro`,
+    [body.SinProc_Data_Aviso, body.CobTp_Codigo, body.SinNat_codigo, body.SinAtiv_codigo, body.SinEvt_Local_Ocorrencia, body.SinEvt_Codigo]
   );
-  const { id, sin_proc_codigo } = insert.rows[0];
-  const numero = processNumber(sin_proc_codigo);
-  await client.query('UPDATE cadastros_despesas SET sin_proc_numero_sinistro = $1 WHERE id = $2', [numero, id]);
+  if (!event.rowCount) {
+    const error = new Error(`Evento ${body.SinEvt_Codigo} não encontrado. Crie o pré-cadastro antes de cadastrar despesas.`) as Error & { status: number };
+    error.status = 404;
+    throw error;
+  }
   for (const item of body.Beneficiarios) {
     await client.query(
-      'INSERT INTO cadastro_despesa_beneficiarios (cadastro_despesa_id, sin_ben_codigo, sin_ben_percentual, tp_vinc_codigo) VALUES ($1,$2,$3,$4)',
-      [id, item.SinBen_codigo, item.SinBen_Percentual, item.TpVinc_Codigo]
+      'INSERT INTO beneficiarios (sin_evt_codigo, sin_ben_codigo, sin_ben_percentual, tp_vinc_codigo) VALUES ($1,$2,$3,$4)',
+      [body.SinEvt_Codigo, item.SinBen_codigo, item.SinBen_Percentual, item.TpVinc_Codigo]
     );
   }
   for (const item of body.Despesas) {
     await client.query(
-      'INSERT INTO cadastro_despesa_itens (cadastro_despesa_id, sin_ben_codigo, ind_texto, ind_valor) VALUES ($1,$2,$3,$4)',
-      [id, item.SinBen_Codigo, item.Ind_Texto, item.Ind_Valor]
+      'INSERT INTO despesas (sin_evt_codigo, sin_ben_codigo, ind_texto, ind_valor) VALUES ($1,$2,$3,$4)',
+      [body.SinEvt_Codigo, item.SinBen_Codigo, item.Ind_Texto, item.Ind_Valor]
     );
   }
-  return { SinEvt_Codigo: body.SinEvt_Codigo, SinProc_codigo: Number(sin_proc_codigo), SinProc_Numero_Sinistro: numero };
+  const result = event.rows[0];
+  return {
+    SinEvt_Codigo: Number(result.sin_evt_codigo),
+    SinProc_codigo: Number(result.sin_proc_codigo),
+    SinProc_Numero_Sinistro: result.sin_proc_numero_sinistro
+  };
 }
 
 export function createApp({ db }: AppOptions) {
