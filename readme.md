@@ -9,7 +9,7 @@ O contrato OpenAPI está em [`openapi.yaml`](./openapi.yaml).
 Os endpoints são públicos e não exigem autenticação.
 
 - `POST /integracaoBrick/preCadastro`: recebe o JSON exibido na documentação. Retorna uma lista com `SinEvt_Codigo`, `SinProc_codigo` e `SinProc_Numero_Sinistro`.
-- `POST /integracaoBrick/upload`: aceita JSON (`{ "data": [...] }`) ou `multipart/form-data`, em que o campo `data` contém esse array em JSON. Cada item tem `url`, `nomeArquivo`, `descricao`, `codigoEvento`. Retorna a lista de status no mesmo formato do anexo.
+- `POST /integracaoBrick/upload`: aceita JSON (`{ "data": [...] }`) ou `multipart/form-data`, em que o campo `data` contém esse array em JSON. Cada item tem `url`, `nomeArquivo`, `descricao`, `codigoEvento`; os códigos são armazenados como recebidos, sem validação de vínculo. Retorna a lista de status no mesmo formato do anexo.
 - `POST /integracaoBrick/despesas`: simula o cadastro de beneficiários e despesas. Aceita códigos de evento e beneficiário externos, mesmo que não existam na base, e retorna identificadores simulados.
 - `GET /health`: verificação de saúde.
 

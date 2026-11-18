@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS despesas (
 
 CREATE TABLE IF NOT EXISTS documentos (
   id BIGSERIAL PRIMARY KEY,
-  sin_evt_codigo BIGINT NOT NULL REFERENCES pre_cadastros(sin_evt_codigo) ON DELETE CASCADE,
+  sin_evt_codigo BIGINT NOT NULL,
   url TEXT NOT NULL,
   nome_arquivo TEXT NOT NULL,
   descricao TEXT NOT NULL,
@@ -45,3 +45,4 @@ CREATE TABLE IF NOT EXISTS documentos (
 -- A rota de despesas é uma simulação de integração e aceita códigos externos.
 ALTER TABLE beneficiarios DROP CONSTRAINT IF EXISTS beneficiarios_sin_evt_codigo_fkey;
 ALTER TABLE despesas DROP CONSTRAINT IF EXISTS despesas_sin_evt_codigo_fkey;
+ALTER TABLE documentos DROP CONSTRAINT IF EXISTS documentos_sin_evt_codigo_fkey;

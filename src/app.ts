@@ -41,12 +41,6 @@ async function createPreCadastro(client: PoolClient, body: PreCadastro) {
 async function createDocuments(client: PoolClient, body: UploadPayload) {
   const responses = [];
   for (const item of body.data) {
-    const exists = await client.query('SELECT 1 FROM pre_cadastros WHERE sin_evt_codigo = $1', [item.codigoEvento]);
-    if (!exists.rowCount) {
-      const error = new Error(`Evento ${item.codigoEvento} não encontrado.`) as Error & { status: number };
-      error.status = 404;
-      throw error;
-    }
     await client.query('INSERT INTO documentos (sin_evt_codigo, url, nome_arquivo, descricao) VALUES ($1,$2,$3,$4)',
       [item.codigoEvento, item.url, item.nomeArquivo, item.descricao]);
     responses.push({ status: 'sucesso', nomeArquivo: item.nomeArquivo, codigoEvento: String(item.codigoEvento) });
@@ -98,8 +92,6 @@ export function createApp({ db }: AppOptions) {
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof ZodError) return res.status(400).json({ error: 'Dados inválidos.', details: error.flatten() });
     if (error instanceof SyntaxError) return res.status(400).json({ error: 'JSON inválido.' });
-    const status = typeof error === 'object' && error && 'status' in error ? Number((error as { status: number }).status) : 500;
-    if (status === 404) return res.status(404).json({ error: (error as Error).message });
     console.error(error);
     return res.status(500).json({ error: 'Erro interno.' });
   });
