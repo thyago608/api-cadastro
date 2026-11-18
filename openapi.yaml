@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: API de Cadastro — Integração Brick
+  version: 1.0.0
+servers:
+  - url: https://{host}
+    variables:
+      host: { default: sua-api.up.railway.app }
+paths:
+  /health:
+    get:
+      summary: Estado do serviço
+      responses: { '200': { description: Serviço disponível } }
+  /integracaoBrick/preCadastro:
+    post:
+      summary: Cria um evento e processo de sinistro
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/PreCadastro' } }
+      responses:
+        '201':
+          description: Pré-cadastro persistido
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PreCadastroResposta' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /integracaoBrick/upload:
+    post:
+      summary: Registra URLs de documentos em um evento
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/Upload' } }
+          multipart/form-data:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { type: string, description: Array JSON serializado de documentos. }
+      responses:
+        '201':
+          description: Documentos registrados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/UploadResposta' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /integracaoBrick/despesas:
+    post:
+      summary: Simula o cadastro de despesas vinculadas a um evento externo
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/Despesas' } }
+      responses:
+        '201':
+          description: Despesas cadastradas com identificadores simulados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PreCadastroResposta' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+components:
+  responses:
+    BadRequest: { description: Payload inválido }
+  schemas:
+    PreCadastro:
+      type: object
+      required: [Ctr_Codigo, DocumentoSegurado, NomeSegurado, CobTp_Codigo, SinNat_codigo, SinAtiv_codigo, SinEvt_Local_Ocorrencia, SinEvt_Data, SinEvt_Data_Acidente, SinProc_Data_Aviso, SinEvt_Anotacoes, SinProc_Anotacoes]
+      properties:
+        Ctr_Codigo: { type: integer, example: 343555 }
+        DocumentoSegurado: { type: string, example: '049.910.136-74' }
+        NomeSegurado: { type: string, example: EMELLY CRISTINY SOARES NARCISO }
+        CobTp_Codigo: { type: integer, example: 25 }
+        SinNat_codigo: { type: integer, example: 16 }
+        SinAtiv_codigo: { type: integer, example: 11 }
+        SinEvt_Local_Ocorrencia: { type: integer, example: 1 }
+        SinEvt_Data: { type: string, format: date }
+        SinEvt_Data_Acidente: { type: string, format: date }
+        SinProc_Data_Aviso: { type: string, format: date }
+        SinEvt_Anotacoes: { type: string }
+        SinProc_Anotacoes: { type: string }
+        Beneficiarios: { type: array, items: { $ref: '#/components/schemas/Beneficiario' } }
+        Despesas: { type: array, items: { $ref: '#/components/schemas/Despesa' } }
+    Beneficiario:
+      type: object
+      required: [SinBen_codigo, SinBen_Percentual, TpVinc_Codigo]
+      properties:
+        SinBen_codigo: { type: integer }
+        SinBen_Percentual: { type: number, format: double }
+        TpVinc_Codigo: { type: integer }
+    Despesa:
+      type: object
+      required: [SinBen_Codigo, Ind_Texto, Ind_Valor]
+      properties:
+        SinBen_Codigo: { type: integer }
+        Ind_Texto: { type: string }
+        Ind_Valor: { type: number, format: double }
+    PreCadastroResposta:
+      type: object
+      properties:
+        SinEvt_Codigo: { type: integer, example: 45371 }
+        SinProc_codigo: { type: integer, example: 59578 }
+        SinProc_Numero_Sinistro: { type: string, example: '0000059578' }
+    Upload:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [url, nomeArquivo, descricao, codigoEvento]
+            properties:
+              url: { type: string, format: uri }
+              nomeArquivo: { type: string, example: documento.pdf }
+              descricao: { type: string, example: documento }
+              codigoEvento: { type: integer, example: 44509 }
+    UploadResposta:
+      type: object
+      properties:
+        status: { type: string, example: sucesso }
+        nomeArquivo: { type: string, example: documento.pdf }
+        codigoEvento: { type: string, example: '44509' }
+    Despesas:
+      type: object
+      required: [SinEvt_Codigo, SinProc_Data_Aviso, CobTp_Codigo, SinNat_codigo, SinAtiv_codigo, SinEvt_Local_Ocorrencia, Beneficiarios, Despesas]
+      properties:
+        SinEvt_Codigo: { type: integer, example: 44509 }
+        SinProc_Data_Aviso: { type: string, format: date, example: '2026-11-09' }
+        CobTp_Codigo: { type: integer, example: 25 }
+        SinNat_codigo: { type: integer, example: 16 }
+        SinAtiv_codigo: { type: integer, example: 11 }
+        SinEvt_Local_Ocorrencia: { type: integer, example: 1 }
+        Beneficiarios: { type: array, minItems: 1, items: { $ref: '#/components/schemas/Beneficiario' } }
+        Despesas: { type: array, minItems: 1, items: { $ref: '#/components/schemas/Despesa' } }
